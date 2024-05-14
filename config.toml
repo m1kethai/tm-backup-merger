@@ -4,9 +4,12 @@ borg_repo = "/home/mikethai/BACKUP/BORG/TMBKP"
 home_dir = "HDD - Data/Users/mike.thai"
 
 [backup]
-# Future options might include:
 encryption = "none"
-exclusions = ["**/Library", "*.tmp", "*.iso", "*.vdi", "*.vmdk", "*.ova", "*.vbox", "*.img", "*.dmg", "**/node_modules/*", "**/.git/*", "**/build/*"]
+include_patterns = ["**/*"]
+exclude_patterns = [
+    "**/Library", "*.tmp", "*.iso", "*.vdi", "*.vmdk", "*.ova",
+    "*.vbox", "*.img", "*.dmg", "**/node_modules/*", "**/.git/*", "**/build/*"
+]
 
 [test]
 test_snapshots_dir = ".test_bkps"

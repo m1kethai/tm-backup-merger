@@ -36,15 +36,12 @@ home_dir = Path(paths['home_dir'])
 
 # Initialize Borg repository if not already done
 if not borg_repo.exists():
-    subprocess.run(['borg', 'init', '--encryption=none', str(borg_repo)], check=True)
+    subprocess.run(['borg', 'init', '--encryption=' + backup['encryption'], str(borg_repo)], check=True)
 
 # Function to list and write snapshot files to include or exclude
 def list_snapshot_files(snapshot_path, archive_name):
-    include_patterns = [str(snapshot_path / home_dir)]
-    exclude_patterns = [
-        '**/Library', '*.tmp', '*.iso', '*.vdi', '*.vmdk', '*.ova',
-        '*.vbox', '*.img', '*.dmg', '**/node_modules/*', '**/.git/*', '**/build/*'
-    ]
+    include_patterns = backup['include_patterns']
+    exclude_patterns = backup['exclude_patterns']
 
     # Prepare to list files
     keep_files = []
@@ -85,17 +82,7 @@ def create_borg_archive(snapshot_path, archive_name):
             '--filter', 'AME',
             '--exclude-caches',
             '--exclude', str(snapshot_home_path / 'Library'),
-            '--exclude', '*.tmp',
-            '--exclude', '*.iso',
-            '--exclude', '*.vdi',
-            '--exclude', '*.vmdk',
-            '--exclude', '*.ova',
-            '--exclude', '*.vbox',
-            '--exclude', '*.img',
-            '--exclude', '*.dmg',
-            '--exclude', '**/node_modules/*',
-            '--exclude', '**/.git/*',
-            '--exclude', '**/build/*',
+            *['--exclude', pat for pat in exclude_patterns],
             f'{str(borg_repo)}::{archive_name}',
             str(snapshot_home_path)
         ], check=True)
@@ -118,8 +105,7 @@ def process_snapshots():
                     create_borg_archive(snapshot, archive_name)
         if args.parallel:
             for future in as_completed(futures):
-                # raise any exceptions caught during the execution
-                future.result()
+                future.result()  # to raise any exceptions caught during the execution
 
 process_snapshots()
 
