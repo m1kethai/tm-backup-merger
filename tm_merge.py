@@ -8,39 +8,31 @@ from pathlib import Path
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
-import sys
+import toml
 
 # Setup argument parser
 parser = argparse.ArgumentParser(description="Merge Time Machine snapshots to a Borg repository.")
 parser.add_argument('--enable-logging', action='store_true', help="Enable detailed logging.")
-parser.add_argument('--config-file', type=str, help="Path to configuration file.")
+parser.add_argument('--config-file', type=str, default='config.toml', help="Path to configuration file.")
 parser.add_argument('--parallel', action='store_true', help="Enable parallel processing of snapshots.")
+parser.add_argument('--test', action='store_true', help="Enable test mode - use dummy snapshots in the '.test_bkps' directory.")
 args = parser.parse_args()
+
+# Load configuration
+config = toml.load(args.config_file)
+paths = config['paths']
+backup = config['backup']
+test = config['test']
 
 # Configure logging
 if args.enable_logging:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-# Function to read configuration from file
-def load_config(path):
-    config = {}
-    with open(path, 'r') as file:
-        for line in file:
-            key, value = line.strip().split('=')
-            config[key.strip()] = value.strip()
-    return config
-
-# Load configuration if specified
-if args.config_file:
-    config = load_config(args.config_file)
-    tm_snapshots_dir = Path(config.get('TM_SNAPSHOTS_DIR', '/run/media/mikepc/Time Machine/Backups.backupdb/Comp-215'))
-    borg_repo = Path(config.get('BORG_REPO', '/home/mikepc/BACKUP/BORG/TMBKP'))
-    home_dir = Path(config.get('HOME_DIR', 'HDD - Data/Users/mike.thai'))
-else:
-    tm_snapshots_dir = Path('/run/media/mikepc/Time Machine/Backups.backupdb/Comp-215')
-    borg_repo = Path('/home/mikepc/BACKUP/BORG/TMBKP')
-    home_dir = Path('HDD - Data/Users/mike.thai')
+# Determine directories based on test mode
+tm_snapshots_dir = Path(test['test_snapshots_dir'] if args.test else paths['tm_snapshots_dir'])
+borg_repo = Path(paths['borg_repo'])
+home_dir = Path(paths['home_dir'])
 
 # Initialize Borg repository if not already done
 if not borg_repo.exists():
@@ -93,7 +85,7 @@ def create_borg_archive(snapshot_path, archive_name):
             '--filter', 'AME',
             '--exclude-caches',
             '--exclude', str(snapshot_home_path / 'Library'),
-            '--exclude', '*.tmp',       # Add your specific exclusions here
+            '--exclude', '*.tmp',
             '--exclude', '*.iso',
             '--exclude', '*.vdi',
             '--exclude', '*.vmdk',
@@ -126,7 +118,8 @@ def process_snapshots():
                     create_borg_archive(snapshot, archive_name)
         if args.parallel:
             for future in as_completed(futures):
-                future.result()  # to raise any exceptions caught during the execution
+                # raise any exceptions caught during the execution
+                future.result()
 
 process_snapshots()
 
