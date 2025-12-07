@@ -1,7 +1,7 @@
 [paths]
-tm_snapshots_dir = "/run/media/mikethai/Time Machine/Backups.backupdb/Comp-215"
-borg_repo = "/home/mikethai/BACKUP/BORG/TMBKP"
-home_dir = "HDD - Data/Users/mike.thai"
+tm_snapshots_dir = ""
+borg_repo = ""
+home_dir = ""
 
 [backup]
 encryption = "none"
@@ -12,4 +12,4 @@ exclude_patterns = [
 ]
 
 [test]
-test_snapshots_dir = ".test_bkps"
+test_snapshots_dir = ".testsnaps"
